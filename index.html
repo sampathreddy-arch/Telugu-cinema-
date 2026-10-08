@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Telugu cinema archive - interactive exploration of feature films, genres, release history, and ratings.">
+    <title>Telugu cinema • Film archive</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Collection Eyebrow & Title -->
+        <header class="page-header">
+            <div class="header-left">
+                <span class="eyebrow-tag">THE COLLECTION / FEATURE FILMS</span>
+                <h1 class="main-title">Telugu cinema</h1>
+            </div>
+            <div class="header-right">
+                <span class="archive-tag" id="archive-range-tag">Film archive • 1950–2020</span>
+                <button id="team-info-btn" class="text-link-btn" title="View Project Team">Team &amp; Info ℹ️</button>
+            </div>
+        </header>
+
+        <!-- Filter Controls Panel -->
+        <section class="filters-card">
+            <!-- Row 1 Filters -->
+            <div class="filters-row-1">
+                <div class="control-col film-search-col">
+                    <label for="film-search-input">FIND A FILM</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="film-search-input" placeholder="Title or story...">
+                    </div>
+                </div>
+
+                <div class="control-col">
+                    <label for="genre-select">GENRE</label>
+                    <div class="select-wrapper">
+                        <select id="genre-select">
+                            <option value="All">All genres</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-col">
+                    <label for="cert-select">CERTIFICATE</label>
+                    <div class="select-wrapper">
+                        <select id="cert-select">
+                            <option value="All">All certificates</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-col">
+                    <label for="from-year-select">FROM YEAR</label>
+                    <div class="select-wrapper">
+                        <select id="from-year-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-col">
+                    <label for="to-year-select">TO YEAR</label>
+                    <div class="select-wrapper">
+                        <select id="to-year-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-col rating-slider-col">
+                    <div class="slider-label-row">
+                        <label for="rating-slider">MINIMUM RATING</label>
+                        <span class="slider-badge" id="rating-slider-display">0.0+</span>
+                    </div>
+                    <input type="range" id="rating-slider" min="0" max="10" step="0.1" value="0">
+                </div>
+            </div>
+
+            <!-- Row 2 Filters -->
+            <div class="filters-row-2">
+                <div class="control-col votes-slider-col">
+                    <div class="slider-label-row">
+                        <label for="votes-slider">MINIMUM VOTES</label>
+                        <span class="slider-badge" id="votes-slider-display">Any</span>
+                    </div>
+                    <input type="range" id="votes-slider" min="0" max="100000" step="500" value="0">
+                </div>
+                <div class="filter-reset-col">
+                    <button id="reset-all-btn" class="reset-link">Reset filters</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Metrics Summary Bar -->
+        <section class="kpi-summary-card">
+            <div class="kpi-item">
+                <span class="kpi-label">UNIQUE FILMS</span>
+                <span class="kpi-number" id="kpi-unique-count">0</span>
+                <span class="kpi-sub" id="kpi-unique-sub">of 0 unique titles</span>
+            </div>
+
+            <div class="kpi-item">
+                <span class="kpi-label">AVERAGE RATING</span>
+                <span class="kpi-number" id="kpi-avg-rating">0.00</span>
+                <span class="kpi-sub">Out of 10</span>
+            </div>
+
+            <div class="kpi-item">
+                <span class="kpi-label">AVERAGE RUNTIME</span>
+                <span class="kpi-number" id="kpi-avg-runtime">0.00</span>
+                <span class="kpi-sub">Minutes, mean</span>
+            </div>
+
+            <div class="kpi-item">
+                <span class="kpi-label">TOTAL RATINGS</span>
+                <span class="kpi-number" id="kpi-total-votes">0</span>
+                <span class="kpi-sub">Across films in view</span>
+            </div>
+        </section>
+
+        <!-- 2x2 Charts Grid -->
+        <section class="charts-matrix">
+            <!-- 1. Release History (Movies by Year) -->
+            <div class="chart-box">
+                <div class="chart-box-header">
+                    <div>
+                        <span class="card-eyebrow">RELEASE HISTORY</span>
+                        <h2 class="card-title">Movies by Year</h2>
+                    </div>
+                    <span class="card-meta" id="year-range-meta">1950–2020</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="moviesByYearCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 2. Genre Mix (Top Genres) -->
+            <div class="chart-box">
+                <div class="chart-box-header">
+                    <div>
+                        <span class="card-eyebrow">GENRE MIX</span>
+                        <h2 class="card-title">Top Genres</h2>
+                    </div>
+                    <span class="card-meta">Films tagged</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="topGenresCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 3. Score Profile (Rating Distribution) -->
+            <div class="chart-box">
+                <div class="chart-box-header">
+                    <div>
+                        <span class="card-eyebrow">SCORE PROFILE</span>
+                        <h2 class="card-title">Rating Distribution</h2>
+                    </div>
+                    <span class="card-meta">Ratings out of 10</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="ratingDistCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 4. Length & Score (Runtime vs Rating) -->
+            <div class="chart-box">
+                <div class="chart-box-header">
+                    <div>
+                        <span class="card-eyebrow">LENGTH &amp; SCORE</span>
+                        <h2 class="card-title">Runtime vs Rating</h2>
+                    </div>
+                    <span class="card-meta">Each dot is one film</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="runtimeRatingCanvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Film Archive Table & Recommender Section -->
+        <section class="bottom-section">
+            <div class="table-card">
+                <div class="table-card-header">
+                    <div>
+                        <span class="card-eyebrow">DATABASE VIEW</span>
+                        <h2 class="card-title">Film Directory</h2>
+                    </div>
+                    <span class="card-meta" id="table-entries-meta">Showing 0 films</span>
+                </div>
+                <div class="table-scroll">
+                    <table class="archive-table">
+                        <thead>
+                            <tr>
+                                <th>TITLE</th>
+                                <th>YEAR</th>
+                                <th>GENRE</th>
+                                <th>CERT</th>
+                                <th>RUNTIME</th>
+                                <th>RATING</th>
+                                <th>VOTES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archive-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Content-Based AI Movie Recommendation Engine (Sampath's ML module) -->
+            <div class="recommender-card">
+                <div class="recommender-card-header">
+                    <div>
+                        <span class="card-eyebrow">MACHINE LEARNING</span>
+                        <h2 class="card-title">Content-Based Recommender</h2>
+                        <p class="recommender-subtitle">TF-IDF &amp; Cosine Similarity recommendation engine (Sampath)</p>
+                    </div>
+                </div>
+                <div class="recommender-form">
+                    <select id="rec-movie-select">
+                        <option value="">Select a film to discover similar titles...</option>
+                    </select>
+                </div>
+                <div id="rec-results-container" class="rec-results-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Modal -->
+        <div id="team-modal" class="modal-backdrop">
+            <div class="modal-card">
+                <div class="modal-card-header">
+                    <div>
+                        <span class="card-eyebrow">FOUNDATION OF DATA SCIENCE</span>
+                        <h2>Project Team &amp; Contributions</h2>
+                    </div>
+                    <button id="modal-close-btn" class="close-x">&times;</button>
+                </div>
+                <div class="modal-body-team">
+                    <div class="team-member-item">
+                        <div class="member-badge">SJ</div>
+                        <div>
+                            <strong>SAI JASWANTH</strong> <code>252U1R7084</code>
+                            <p>Exploratory Data Analysis (EDA) &amp; Visualization</p>
+                        </div>
+                    </div>
+                    <div class="team-member-item">
+                        <div class="member-badge">MO</div>
+                        <div>
+                            <strong>MOKSHITH</strong> <code>252U1R7074</code>
+                            <p>Data Preprocessing, Cleaning &amp; Imputation</p>
+                        </div>
+                    </div>
+                    <div class="team-member-item">
+                        <div class="member-badge">MA</div>
+                        <div>
+                            <strong>MANISH</strong> <code>252U1R7060</code>
+                            <p>Statistical Analysis, Dispersion &amp; Correlation</p>
+                        </div>
+                    </div>
+                    <div class="team-member-item">
+                        <div class="member-badge">NA</div>
+                        <div>
+                            <strong>NAVADEEP</strong> <code>252U1R7100</code>
+                            <p>Feature Engineering &amp; Popularity Metrics</p>
+                        </div>
+                    </div>
+                    <div class="team-member-item">
+                        <div class="member-badge">SK</div>
+                        <div>
+                            <strong>SAMPATH KUMAR</strong> <code>252U1R7084</code>
+                            <p>Content-Based Recommendation Engine (TF-IDF)</p>
+                        </div>
+                    </div>
+                    <div class="team-member-item">
+                        <div class="member-badge">VK</div>
+                        <div>
+                            <strong>VARUN KUMAR</strong> <code>252U1R7094</code>
+                            <p>Interactive Visualizations &amp; Dashboard Layout</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
